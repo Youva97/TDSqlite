@@ -11,22 +11,25 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
 
-    private StringBuffer monBuffer;
     private Context context;
-    protected Button btnBaseData;
-    protected EditText editTxtBaseData;
+
+    private ListView listView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btnBaseData = findViewById(R.id.btnBaseData);
-        editTxtBaseData = findViewById(R.id.editTxtBaseData);
+        listView = findViewById(R.id.listView);
 
 
 
@@ -68,50 +71,38 @@ public class MainActivity extends AppCompatActivity {
 
             afficheMaBAse("Table: " + maSQLdb.NOM_TABLE, monBuffer);
         }*/
+        Cursor cursor = maSQLdb.lireTable();
 
-        btnBaseData.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String searchTerm = editTxtBaseData.getText().toString().trim();
-                Cursor cursor;
-                if (searchTerm.isEmpty()) cursor = maSQLdb.lireTable();
-                else {
-                    // Vérifiez si l'utilisateur a entré un nombre ou un prénom
-                    try {
-                        // Si l'utilisateur a entré un nombre, recherche par âge
-                        int age = Integer.parseInt(searchTerm);
-                        cursor = maSQLdb.lireTable(age);
-                    } catch (NumberFormatException e) {
-                        Log.d("catch", "passage catch " + searchTerm);
-                        // Si l'utilisateur n'a pas entré un nombre, recherche par Prénom / Nom
-                        cursor = maSQLdb.lireTable(searchTerm);
-                        Log.d("catch", "passage catch " + searchTerm);
+        if (cursor.getCount() == 0){
+            Toast.makeText(MainActivity.this, "Aucune correspondance trouvée.", Toast.LENGTH_SHORT).show();
+        } else {
+            ArrayList<HashMap<String,String>> listItem = new ArrayList<HashMap<String,String>>();
 
-                    }
-                }
+            HashMap<String,String> map;
 
-                if (cursor.getCount() == 0) {
-                    // Si pas d'enregistrements, affichez un message
-                    Toast.makeText(MainActivity.this, "Aucune correspondance trouvée.", Toast.LENGTH_SHORT).show();
-                } else {
-                    // Si des enregistrements sont trouvés, traitez les données
-                    monBuffer = new StringBuffer();
-                    cursor.moveToFirst();
-                    while (!cursor.isAfterLast()) {
-                        monBuffer.append("id:" + cursor.getInt(0) + "\n\r\r");
-                        monBuffer.append("NOM:" + cursor.getString(1) + "\n\r\r");
-                        monBuffer.append("PRENOM:" + cursor.getString(2) + "\n\r\r");
-                        monBuffer.append("AGE :" + cursor.getInt(3) + "\n");
-                        monBuffer.append("__________\n");
-                        cursor.moveToNext();
-                    }
-                    cursor.close();
-                    Log.d("Buffer", "monBuffer" + monBuffer);
-                    afficheMaBAse("Résultats de la recherche", monBuffer);
-                }
+            map = new HashMap<String,String>();
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                map = new HashMap<String,String>();
+                map.put("idClient" , String.valueOf(cursor.getInt(0)));
+                map.put("NOM" , (cursor.getString(1)) );
+                map.put("PRENOM" ,(cursor.getString(2)));
+                map.put("AGE", (String.valueOf(cursor.getString(3))) );
+                cursor.moveToNext();
+                listItem.add(map);
+
             }
-        });
+            SimpleAdapter monAdapter = new SimpleAdapter(this.getBaseContext(),
+                    listItem, R.layout.affichage_customer, new String[] {"idClient","NOM", "PRENOM", "AGE"}, new int[] {R.id.numberCustomer,R.id.txtLastname,R.id.txtFirsname, R.id.txtAge});
+
+            listView.setAdapter(monAdapter);
+            cursor.close();
+
+
+        }
+
     }
+    /*
     public void afficheMaBAse(String titre, StringBuffer message) {
         AlertDialog aD = new AlertDialog.Builder(this).create();
         aD.setTitle(titre);
@@ -132,6 +123,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         aD.show();
-    }
+    }*/
 
 }
